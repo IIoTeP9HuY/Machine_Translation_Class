@@ -8,13 +8,16 @@
 #include <unordered_map>
 
 #include "translation_model.hpp"
+#include "alignment_model.hpp"
 
 class IBM_Model_1 {
 public:
-	TranslationModel train(const IntSentencePairs& sentencePairs, 
-							size_t iterationsNumber,
-							double defaultValue = 1.0 / 100) {
-		TranslationModel translationModel(defaultValue);
+	explicit IBM_Model_1(int iterationsNumber): iterationsNumber(iterationsNumber) {
+	}
+
+	std::pair<TranslationModel, AlignmentModel> train(const IntSentencePairs& sentencePairs, 
+														TranslationModel translationModel,
+														AlignmentModel alignmentModel) const {
 
 		for (size_t iteration = 0; iteration < iterationsNumber; ++iteration) {
 			std::cerr << "Iteration: " << iteration << std::endl;
@@ -69,10 +72,11 @@ public:
 			}
 		}
 
-		return translationModel;
+		return std::make_pair(translationModel, alignmentModel);
 	}
 
 private:
+	int iterationsNumber;
 
 };
 

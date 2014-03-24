@@ -42,21 +42,36 @@ public:
 		return translationProbabilities;
 	}
 
+	void loadFromFile(const std::string &filename) {
+		std::ifstream ifs(filename);
+		load(ifs);
+	}
+
+	void saveToFile(const std::string &filename) const {
+		std::ofstream ofs(filename);
+		save(ofs);
+	}
+
+	void load(std::istream &is) {
+		is >> defaultValue;
+		while (!is.eof()) {
+			int e, f;
+			double probability;
+			is >> e >> f >> probability;
+			setTranslationProbability(e, f, probability);
+		}
+	}
+
+	void save(std::ostream &os) const {
+		os << defaultValue << '\n';
+		for (const auto &it : translationProbabilities) {
+			os << it.first.first << " " << it.first.second << " " << it.second << '\n';
+		}
+	}
+
 private:
 	std::unordered_map< std::pair<int, int>, double > translationProbabilities;
 	double defaultValue;
 };
-
-TranslationModel readTranslationModel(const std::string &filename) {
-	TranslationModel model;
-	std::ifstream ifs(filename);
-	while (!ifs.eof()) {
-		int e, f;
-		double probability;
-		ifs >> e >> f >> probability;
-		model.setTranslationProbability(e, f, probability);
-	}
-	return model;
-}
 
 #endif // TRANSLATION_MODEL_HPP

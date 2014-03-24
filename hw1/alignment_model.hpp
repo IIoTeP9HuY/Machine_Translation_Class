@@ -57,21 +57,37 @@ public:
 		incAlignmentProbability(AlignmentKey(i, j, l_e, l_f), value);
 	}
 
+	void loadFromFile(const std::string &filename) {
+		std::ifstream ifs(filename);
+		load(ifs);
+	}
+
+	void saveToFile(const std::string &filename) const {
+		std::ofstream ofs(filename);	
+		save(ofs);
+	}
+
+	void load(std::istream &is) {
+		is >> defaultValue;
+		while (!is.eof()) {
+			int i, j, l_e, l_f;
+			double probability;
+			is >> i >> j >> l_e >> l_f >> probability;
+			setAlignmentProbability(i, j, l_e, l_f, probability);
+		}
+	}
+
+	void save(std::ostream &os) const {
+		os << defaultValue << '\n';
+		for (const auto &it : alignmentProbabilities) {
+			os << it.first.i << " " << it.first.j << " " << it.first.l_e << " " << it.first.l_f << it.second << '\n';
+		}
+	}
+
+
 private:
 	std::unordered_map< AlignmentKey, double > alignmentProbabilities;
 	double defaultValue;
 };
-
-// AlignmentModel readAlignmentModel(const std::string &filename) {
-// 	AlignmentModel model;
-// 	std::ifstream ifs(filename);
-// 	while (!ifs.eof()) {
-// 		int e, f;
-// 		double probability;
-// 		ifs >> e >> f >> probability;
-// 		model.setAlignmentProbability(e, f, probability);
-// 	}
-// 	return model;
-// }
 
 #endif // ALIGNMENT_MODEL_HPP

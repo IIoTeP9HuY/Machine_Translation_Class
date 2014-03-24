@@ -25,6 +25,9 @@ static inline std::string &rtrim(std::string &s) {
 
 class Aligner {
 public:
+	Aligner(): translationModel(1.0), alignmentModel(1.0) {
+	}
+
 	void readSentences(const string &path, int sentencesNumber) {
 		ifstream eInput(path + "hansards.e");
 		ifstream fInput(path + "hansards.f");
@@ -63,31 +66,40 @@ public:
 		cerr << "efPairs: " << efTotalPairs << endl;
 	}
 
-	void trainModel1() {
-		model = IBM_Model_1().train(sentencePairs, 10, 1.0 / fDict.size());
+	template<typename ModelBuilder>
+	void trainModel(const ModelBuilder& modelBuilder) {
+		std::tie(translationModel, alignmentModel) = modelBuilder.train(sentencePairs,
+																		translationModel,
+																		alignmentModel);
 	}
 
-	void trainModel2() {
-		std::tie(model, alignmentModel) = IBM_Model_2().train(sentencePairs, 10, 1.0 / fDict.size());
+	// void trainModel1() {
+	// 	std::tie(translationModel, alignmentModel) = IBM_Model_1(10).train(sentencePairs, 1.0 / fDict.size());
+	// }
+
+	// void trainModel2() {
+	// 	std::tie(translationModel, alignmentModel) = IBM_Model_2(10).train(sentencePairs, 1.0 / fDict.size());
+	// }
+
+	void setTranslationModel(TranslationModel &&translationModel) {
+		this->translationModel = translationModel;
 	}
 
-	void setModel(TranslationModel &&translationModel) {
-		model = translationModel;
+	void setTranslationModel(const TranslationModel &translationModel) {
+		this->translationModel = translationModel;
 	}
 
-	void setModel(const TranslationModel &translationModel) {
-		model = translationModel;
+	void setAlignmentModel(AlignmentModel &&alignmentModel) {
+		this->alignmentModel = alignmentModel;
 	}
 
-	void saveModel(std::ostream &os) {
-		for (const auto &it : model.getTranslationProbabilities()) {
-			os << it.first.first << " " << it.first.second << " " << it.second << '\n';
-		}
+	void setAlignmentModel(const AlignmentModel &alignmentModel) {
+		this->alignmentModel = alignmentModel;
 	}
 
 	void buildAlignmentModel2(std::ostream &os, double threshold = 0.5) {
 		for (const auto &sentencePair : sentencePairs) {
-			auto alignment = viterbiAlignment(sentencePair, model, alignmentModel, threshold);
+			auto alignment = viterbiAlignment(sentencePair, translationModel, alignmentModel, threshold);
 			for (const auto &alignmentPair : alignment) {
 				os << alignmentPair.second << "-" << alignmentPair.first << " ";
 			}
@@ -113,7 +125,7 @@ public:
 				for (int j = 0; j < sentencePair.second.size(); ++j) {
 					int e = sentencePair.first[i];
 					int f = sentencePair.second[j];
-					double probability = model.getTranslationProbability(e, f);
+					double probability = translationModel.getTranslationProbability(e, f);
 					if (probability > threshold) {
 						// cerr << i << '-' << j << ' ';
 						// cerr << eDict.getWordByIndex(e) << " " << fDict.getWordByIndex(f) << " " << probability << endl;
@@ -131,7 +143,7 @@ public:
 					int e = sentencePair.first[i];
 					int f = sentencePair.second[j];
 					if (neighbors[e].find(f) == neighbors[e].end()) {
-						double probability = model.getTranslationProbability(e, f);
+						double probability = translationModel.getTranslationProbability(e, f);
 						if (probability > threshold) {
 							neighbors[e].insert(f);
 							neighborsDistances[e].push(std::make_pair(probability, f));
@@ -152,7 +164,7 @@ public:
 					int e = sentencePair.first[i];
 					int f = sentencePair.second[j];
 					if (neighbors[e].find(f) != neighbors[e].end()) {
-						double probability = model.getTranslationProbability(e, f);
+						double probability = translationModel.getTranslationProbability(e, f);
 						// cerr << i << '-' << j << ' ';
 						// cerr << eDict.getWordByIndex(e) << " " << fDict.getWordByIndex(f) << " " << probability << endl;
 						os << j << '-' << i << ' ';
@@ -167,13 +179,29 @@ public:
 		return sentencePairs.size();
 	}
 
+	// const TranslationModel &getTranslationModel() {
+	// 	return translationModel;
+	// }
+
+	// const AlignmentModel &getAlignmentModel() {
+	// 	return alignmentModel;
+	// }
+
+	TranslationModel &getTranslationModel() {
+		return translationModel;
+	}
+
+	AlignmentModel &getAlignmentModel() {
+		return alignmentModel;
+	}
+
 private:
 	IntSentencePairs sentencePairs;
 
 	WordToIntDict eDict;
 	WordToIntDict fDict;
 
-	TranslationModel model;
+	TranslationModel translationModel;
 	AlignmentModel alignmentModel;
 };
 
@@ -184,20 +212,30 @@ int main(int argc, char **argv) {
 
 	Aligner aligner;
 	aligner.readSentences(dataPath, sentencesNumber);
-	// aligner.setModel(readTranslationModel("model_100000"));
-	aligner.trainModel2();
+	// aligner.setModel(readTranslationModel("translationModel_100000"));
 
-	// ofstream modelOfs("model");
-	// aligner.saveModel(modelOfs);
+	// aligner.getTranslationModel().loadFromFile("translation_model_1");
+	// aligner.getAlignmentModel().loadFromFile("alignment_model_1");
+	// aligner.trainModel(IBM_Model_1(10));
+	// aligner.getTranslationModel().saveToFile("translation_model_2");
+	// aligner.getAlignmentModel().saveToFile("alignment_model_2");
+
+	// aligner.getTranslationModel().loadFromFile("translation_model_2");
+	// aligner.getAlignmentModel().loadFromFile("alignment_model_2");
+	aligner.trainModel(IBM_Model_1(10));
+	aligner.trainModel(IBM_Model_2(10));
+	aligner.getTranslationModel().saveToFile("translation_model");
+	aligner.getAlignmentModel().saveToFile("alignment_model");
+	
 
 	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
 	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))));
 	// 	aligner.buildAlignmentModel1(ofs, threshold, 100);
 	// }
 
-	for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
-		aligner.buildAlignmentModel2(ofs, threshold);
-	}
+	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
+	// 	aligner.buildAlignmentModel2(ofs, threshold / 2);
+	// }
 	return 0;	
 }

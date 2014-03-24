@@ -12,11 +12,12 @@
 
 class IBM_Model_2 {
 public:
+	IBM_Model_2(size_t iterationsNumber): iterationsNumber(iterationsNumber) {
+	}
+
 	std::pair<TranslationModel, AlignmentModel> train(const IntSentencePairs& sentencePairs, 
-							size_t iterationsNumber,
-							double defaultValue = 1.0 / 100) {
-		TranslationModel translationModel(defaultValue);
-		AlignmentModel alignmentModel(defaultValue);
+														TranslationModel translationModel,
+														AlignmentModel alignmentModel) const {
 
 		for (size_t iteration = 0; iteration < iterationsNumber; ++iteration) {
 			std::cerr << "Iteration: " << iteration << std::endl;
@@ -27,34 +28,66 @@ public:
 			AlignmentModel countA;
 			AlignmentModel totalA;
 
-			for (size_t i = 0; i < sentencePairs.size(); ++i) {
-				const auto &sentencePair = sentencePairs[i];
-				size_t l_e = sentencePair.first.size(); 
-				size_t l_f = sentencePair.second.size();
+			#pragma omp parallel shared(total, count, countA, totalA)
+			{
+				std::unordered_map<int, double> threadTotal;
+				std::unordered_map<std::pair<int, int>, double> threadCount;
+				AlignmentModel threadCountA;
+				AlignmentModel threadTotalA;
 
-				std::unordered_map<int, double> sTotal;
-				for (size_t i = 0; i < l_e; ++i) {
-					const auto &e = sentencePair.first[i];
-					sTotal[e] = 0;
-					for (size_t j = 0; j < l_f; ++j) {
-						const auto &f = sentencePair.second[j];
-						sTotal[e] += translationModel.getTranslationProbability(e, f)
-										* alignmentModel.getAlignmentProbability(i, j, l_e, l_f);
+				#pragma omp for schedule(static)
+				for (size_t i = 0; i < sentencePairs.size(); ++i) {
+					const auto &sentencePair = sentencePairs[i];
+					size_t l_e = sentencePair.first.size(); 
+					size_t l_f = sentencePair.second.size();
+
+					std::unordered_map<int, double> sTotal;
+					for (size_t i = 0; i < l_e; ++i) {
+						const auto &e = sentencePair.first[i];
+						sTotal[e] = 0;
+						for (size_t j = 0; j < l_f; ++j) {
+							const auto &f = sentencePair.second[j];
+							sTotal[e] += translationModel.getTranslationProbability(e, f)
+											* alignmentModel.getAlignmentProbability(i, j, l_e, l_f);
+						}
+					}
+
+					for (size_t i = 0; i < l_e; ++i) {
+						const auto &e = sentencePair.first[i];
+						for (size_t j = 0; j < l_f; ++j) {
+							const auto &f = sentencePair.second[j];
+
+							double delta = translationModel.getTranslationProbability(e, f)
+											* alignmentModel.getAlignmentProbability(i, j, l_e, l_f) / sTotal[e];
+
+							threadCount[std::make_pair(e, f)] += delta;
+							threadTotal[f] += delta;
+							threadCountA.incAlignmentProbability(i, j, l_e, l_f, delta);
+							threadTotalA.incAlignmentProbability(0, j, l_e, l_f, delta);
+						}
 					}
 				}
 
-				for (size_t i = 0; i < l_e; ++i) {
-					const auto &e = sentencePair.first[i];
-					for (size_t j = 0; j < l_f; ++j) {
-						const auto &f = sentencePair.second[j];
-
-						double delta = translationModel.getTranslationProbability(e, f)
-										* alignmentModel.getAlignmentProbability(i, j, l_e, l_f) / sTotal[e];
-
-						count[std::make_pair(e, f)] += delta;
-						total[f] += delta;
-						countA.incAlignmentProbability(i, j, l_e, l_f, delta);
-						totalA.incAlignmentProbability(0, j, l_e, l_f, delta);
+				#pragma omp critical
+				{
+					if (total.empty() && count.empty()) {
+						std::swap(total, threadTotal);
+						std::swap(count, threadCount);
+						std::swap(countA, threadCountA);
+						std::swap(totalA, threadTotalA);
+					} else {
+						for (const auto &it : threadTotal) {
+							total[it.first] += it.second;
+						}
+						for (const auto &it : threadCount) {
+							count[it.first] += it.second;
+						}
+						for (const auto &it : threadTotalA.getAlignmentProbabilities()) {
+							totalA.incAlignmentProbability(it.first, it.second);
+						}
+						for (const auto &it : threadCountA.getAlignmentProbabilities()) {
+							countA.incAlignmentProbability(it.first, it.second);
+						}
 					}
 				}
 			}	
@@ -73,7 +106,7 @@ public:
 	}
 
 private:
-
+	size_t iterationsNumber;
 };
 
 std::vector< std::pair<int, int> > viterbiAlignment(const IntSentencePair &sentencePair,
