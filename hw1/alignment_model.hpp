@@ -80,7 +80,7 @@ public:
 	void save(std::ostream &os) const {
 		os << defaultValue << '\n';
 		for (const auto &it : alignmentProbabilities) {
-			os << it.first.i << " " << it.first.j << " " << it.first.l_e << " " << it.first.l_f << it.second << '\n';
+			os << it.first.i << " " << it.first.j << " " << it.first.l_e << " " << it.first.l_f << " " << it.second << '\n';
 		}
 	}
 

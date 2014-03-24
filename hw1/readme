@@ -1,0 +1,12 @@
+To run program you can use following commands:
+# mkdir build
+# cd build
+# cmake ..
+# make
+# ./aligner 100
+
+Dependencies:
+GCC >= 4.4
+CMake >= 2.6
+
+Author: Kashin Andrey, email: kashin.andrej@gmail.com

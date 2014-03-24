@@ -214,18 +214,20 @@ int main(int argc, char **argv) {
 	aligner.readSentences(dataPath, sentencesNumber);
 	// aligner.setModel(readTranslationModel("translationModel_100000"));
 
-	// aligner.getTranslationModel().loadFromFile("translation_model_1");
-	// aligner.getAlignmentModel().loadFromFile("alignment_model_1");
-	// aligner.trainModel(IBM_Model_1(10));
-	// aligner.getTranslationModel().saveToFile("translation_model_2");
-	// aligner.getAlignmentModel().saveToFile("alignment_model_2");
+// {}
+// 	aligner.getTranslationModel().loadFromFile("model_100000");
+// 	// aligner.getAlignmentModel().loadFromFile("alignment_model_1");
+// 	aligner.trainModel(IBM_Model_2(10));
+// 	aligner.getTranslationModel().saveToFile("translation_model_2");
+// 	aligner.getAlignmentModel().saveToFile("alignment_model_2");
+// {}
 
-	// aligner.getTranslationModel().loadFromFile("translation_model_2");
-	// aligner.getAlignmentModel().loadFromFile("alignment_model_2");
-	aligner.trainModel(IBM_Model_1(10));
-	aligner.trainModel(IBM_Model_2(10));
-	aligner.getTranslationModel().saveToFile("translation_model");
-	aligner.getAlignmentModel().saveToFile("alignment_model");
+	aligner.getTranslationModel().loadFromFile("translation_model_2");
+	aligner.getAlignmentModel().loadFromFile("alignment_model_2");
+	// aligner.trainModel(IBM_Model_1(10));
+	// aligner.trainModel(IBM_Model_2(10));
+	// aligner.getTranslationModel().saveToFile("translation_model");
+	// aligner.getAlignmentModel().saveToFile("alignment_model");
 	
 
 	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
@@ -233,9 +235,9 @@ int main(int argc, char **argv) {
 	// 	aligner.buildAlignmentModel1(ofs, threshold, 100);
 	// }
 
-	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
-	// 	aligner.buildAlignmentModel2(ofs, threshold / 2);
-	// }
+	for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
+		aligner.buildAlignmentModel2(ofs, threshold / 10);
+	}
 	return 0;	
 }
