@@ -73,14 +73,6 @@ public:
 																		alignmentModel);
 	}
 
-	// void trainModel1() {
-	// 	std::tie(translationModel, alignmentModel) = IBM_Model_1(10).train(sentencePairs, 1.0 / fDict.size());
-	// }
-
-	// void trainModel2() {
-	// 	std::tie(translationModel, alignmentModel) = IBM_Model_2(10).train(sentencePairs, 1.0 / fDict.size());
-	// }
-
 	void setTranslationModel(TranslationModel &&translationModel) {
 		this->translationModel = translationModel;
 	}
@@ -108,14 +100,6 @@ public:
 	}
 
 	void buildAlignmentModel1(std::ostream &os, double threshold = 0.5, int neighborsNumber = 3) {
-		// for (const auto &it : t.getTranslationProbabilities()) {
-		// 	if (it.second < 0.5) {
-		// 		continue;
-		// 	}
-		// 	int e = it.first.first;
-		// 	int f = it.first.second;
-		// 	std::cerr << eDict.getWordByIndex(e) << " " << fDict.getWordByIndex(f) << " " << it.second << std::endl;
-		// }
 
 		vector< unordered_set<int> > neighbors(eDict.size());
 		vector< priority_queue< pair<double, int> > > neighborsDistances(eDict.size());
@@ -127,8 +111,6 @@ public:
 					int f = sentencePair.second[j];
 					double probability = translationModel.getTranslationProbability(e, f);
 					if (probability > threshold) {
-						// cerr << i << '-' << j << ' ';
-						// cerr << eDict.getWordByIndex(e) << " " << fDict.getWordByIndex(f) << " " << probability << endl;
 						os << j << '-' << i << ' ';
 					}
 				}
@@ -179,14 +161,6 @@ public:
 		return sentencePairs.size();
 	}
 
-	// const TranslationModel &getTranslationModel() {
-	// 	return translationModel;
-	// }
-
-	// const AlignmentModel &getAlignmentModel() {
-	// 	return alignmentModel;
-	// }
-
 	TranslationModel &getTranslationModel() {
 		return translationModel;
 	}
@@ -214,30 +188,22 @@ int main(int argc, char **argv) {
 	aligner.readSentences(dataPath, sentencesNumber);
 	// aligner.setModel(readTranslationModel("translationModel_100000"));
 
-// {}
-// 	aligner.getTranslationModel().loadFromFile("model_100000");
-// 	// aligner.getAlignmentModel().loadFromFile("alignment_model_1");
-// 	aligner.trainModel(IBM_Model_2(10));
-// 	aligner.getTranslationModel().saveToFile("translation_model_2");
-// 	aligner.getAlignmentModel().saveToFile("alignment_model_2");
-// {}
+	aligner.trainModel(IBM_Model_1(100000));
+	// aligner.getTranslationModel().saveToFile("model_100000");
 
-	aligner.getTranslationModel().loadFromFile("translation_model_2");
-	aligner.getAlignmentModel().loadFromFile("alignment_model_2");
-	// aligner.trainModel(IBM_Model_1(10));
-	// aligner.trainModel(IBM_Model_2(10));
+	// aligner.getTranslationModel().loadFromFile("model_100000");
+	aligner.trainModel(IBM_Model_2(10));
+
 	// aligner.getTranslationModel().saveToFile("translation_model");
 	// aligner.getAlignmentModel().saveToFile("alignment_model");
 	
 
-	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))));
-	// 	aligner.buildAlignmentModel1(ofs, threshold, 100);
-	// }
+	ofstream ofs("alignment.a");
+	aligner.buildAlignmentModel2(ofs, 0.1);
 
-	for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
-		aligner.buildAlignmentModel2(ofs, threshold / 10);
-	}
+	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
+	// 	aligner.buildAlignmentModel2(ofs, threshold);
+	// }
 	return 0;	
 }
