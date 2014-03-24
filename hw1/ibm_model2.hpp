@@ -16,9 +16,11 @@ public:
 	}
 
 	std::pair<TranslationModel, AlignmentModel> train(const IntSentencePairs& sentencePairs, 
-														TranslationModel translationModel,
-														AlignmentModel alignmentModel) const {
+	                                                  TranslationModel translationModel,
+	                                                  AlignmentModel alignmentModel,
+	                                                  size_t sentencesNumber = std::numeric_limits<size_t>::max()) const {
 
+		sentencesNumber = std::min(sentencesNumber, sentencePairs.size());
 		for (size_t iteration = 0; iteration < iterationsNumber; ++iteration) {
 			std::cerr << "Iteration: " << iteration << std::endl;
 
@@ -36,8 +38,8 @@ public:
 				AlignmentModel threadTotalA;
 
 				#pragma omp for schedule(static)
-				for (size_t i = 0; i < sentencePairs.size(); ++i) {
-					const auto &sentencePair = sentencePairs[i];
+				for (size_t k = 0; k < sentencesNumber; ++k) {
+					const auto &sentencePair = sentencePairs[k];
 					size_t l_e = sentencePair.first.size(); 
 					size_t l_f = sentencePair.second.size();
 

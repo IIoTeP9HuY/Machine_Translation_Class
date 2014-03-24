@@ -67,10 +67,11 @@ public:
 	}
 
 	template<typename ModelBuilder>
-	void trainModel(const ModelBuilder& modelBuilder) {
+	void trainModel(const ModelBuilder& modelBuilder, size_t sentencesNumber = numeric_limits<size_t>::max()) {
 		std::tie(translationModel, alignmentModel) = modelBuilder.train(sentencePairs,
-																		translationModel,
-																		alignmentModel);
+		                                                                translationModel,
+		                                                                alignmentModel,
+		                                                                sentencesNumber);
 	}
 
 	void setTranslationModel(TranslationModel &&translationModel) {
@@ -159,22 +160,22 @@ int main(int argc, char **argv) {
 	aligner.readSentences(dataPath, sentencesNumber);
 	// aligner.setModel(readTranslationModel("translationModel_100000"));
 
-	aligner.trainModel(IBM_Model_1(10));
+	aligner.trainModel(IBM_Model_1(10), 1000);
 	// aligner.getTranslationModel().saveToFile("model_100000");
 
 	// aligner.getTranslationModel().loadFromFile("model_100000");
-	aligner.trainModel(IBM_Model_2(1));
+	aligner.trainModel(IBM_Model_2(1), 1000);
 
 	// aligner.getTranslationModel().saveToFile("translation_model");
 	// aligner.getAlignmentModel().saveToFile("alignment_model");
 	
 
-	ofstream ofs("alignment.a");
-	aligner.buildAlignmentModel2(ofs, 0.1);
+	// ofstream ofs("alignment.a");
+	// aligner.buildAlignmentModel2(ofs, 0.1);
 
-	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
-	// 	aligner.buildAlignmentModel2(ofs, threshold);
-	// }
+	for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model");
+		aligner.buildAlignmentModel2(ofs, threshold);
+	}
 	return 0;	
 }
