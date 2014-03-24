@@ -7,13 +7,14 @@
 #include <unordered_set>
 
 #include "ibm_model1.hpp"
+#include "ibm_model2.hpp"
 #include "preprocess.hpp"
 
 using namespace std;
 
 int sentencesNumber = 10000;
 
-const string dataPath = "/home/acid/documents/shad/year_2/MachineTranslation/hw1/dreamt/aligner/data/";
+const string dataPath = "../data/";
 
 // trim from end
 static inline std::string &rtrim(std::string &s) {
@@ -62,8 +63,12 @@ public:
 		cerr << "efPairs: " << efTotalPairs << endl;
 	}
 
-	void trainModel() {
+	void trainModel1() {
 		model = IBM_Model_1().train(sentencePairs, 10, 1.0 / fDict.size());
+	}
+
+	void trainModel2() {
+		std::tie(model, alignmentModel) = IBM_Model_2().train(sentencePairs, 10, 1.0 / fDict.size());
 	}
 
 	void setModel(TranslationModel &&translationModel) {
@@ -80,7 +85,17 @@ public:
 		}
 	}
 
-	void buildAlignment(std::ostream &os, double threshold = 0.5, int neighborsNumber = 3) {
+	void buildAlignmentModel2(std::ostream &os, double threshold = 0.5) {
+		for (const auto &sentencePair : sentencePairs) {
+			auto alignment = viterbiAlignment(sentencePair, model, alignmentModel, threshold);
+			for (const auto &alignmentPair : alignment) {
+				os << alignmentPair.second << "-" << alignmentPair.first << " ";
+			}
+			os << "\n";
+		}
+	}
+
+	void buildAlignmentModel1(std::ostream &os, double threshold = 0.5, int neighborsNumber = 3) {
 		// for (const auto &it : t.getTranslationProbabilities()) {
 		// 	if (it.second < 0.5) {
 		// 		continue;
@@ -159,6 +174,7 @@ private:
 	WordToIntDict fDict;
 
 	TranslationModel model;
+	AlignmentModel alignmentModel;
 };
 
 int main(int argc, char **argv) {
@@ -169,14 +185,19 @@ int main(int argc, char **argv) {
 	Aligner aligner;
 	aligner.readSentences(dataPath, sentencesNumber);
 	// aligner.setModel(readTranslationModel("model_100000"));
-	aligner.trainModel();
+	aligner.trainModel2();
 
-	ofstream modelOfs("model");
-	aligner.saveModel(modelOfs);
+	// ofstream modelOfs("model");
+	// aligner.saveModel(modelOfs);
+
+	// for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+	// 	ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))));
+	// 	aligner.buildAlignmentModel1(ofs, threshold, 100);
+	// }
 
 	for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))));
-		aligner.buildAlignment(ofs, threshold, 100);
+		ofstream ofs("alignment.a." + to_string(int(round(threshold * 10))) + ".model2");
+		aligner.buildAlignmentModel2(ofs, threshold);
 	}
 	return 0;	
 }
