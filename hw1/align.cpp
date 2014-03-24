@@ -90,21 +90,29 @@ public:
 	}
 
 	void buildAlignmentModel2(std::ostream &os, double threshold = 0.5) {
+		size_t processed = 0;
+		size_t blockSize = ((sentencePairs.size() + 9) / 10);
 		for (const auto &sentencePair : sentencePairs) {
+			if (processed % blockSize == 0) {
+				cerr << "Processed " << processed << endl;
+			}
 			auto alignment = viterbiAlignment(sentencePair, translationModel, alignmentModel, threshold);
 			for (const auto &alignmentPair : alignment) {
 				os << alignmentPair.second << "-" << alignmentPair.first << " ";
 			}
 			os << "\n";
+			++processed;
 		}
 	}
 
-	void buildAlignmentModel1(std::ostream &os, double threshold = 0.5, int neighborsNumber = 3) {
-
-		vector< unordered_set<int> > neighbors(eDict.size());
-		vector< priority_queue< pair<double, int> > > neighborsDistances(eDict.size());
+	void buildAlignmentModel1(std::ostream &os, double threshold = 0.5) {
+		size_t processed = 0;
+		size_t blockSize = ((sentencePairs.size() + 9) / 10);
 
 		for (const auto &sentencePair : sentencePairs) {
+			if (processed % blockSize == 0) {
+				cerr << "Processed " << processed << endl;
+			}
 			for (int i = 0; i < sentencePair.first.size(); ++i) {
 				for (int j = 0; j < sentencePair.second.size(); ++j) {
 					int e = sentencePair.first[i];
@@ -116,44 +124,7 @@ public:
 				}
 			}
 			os << '\n';
-		}
-		return;
-
-		for (const auto &sentencePair : sentencePairs) {
-			for (int i = 0; i < sentencePair.first.size(); ++i) {
-				for (int j = 0; j < sentencePair.second.size(); ++j) {
-					int e = sentencePair.first[i];
-					int f = sentencePair.second[j];
-					if (neighbors[e].find(f) == neighbors[e].end()) {
-						double probability = translationModel.getTranslationProbability(e, f);
-						if (probability > threshold) {
-							neighbors[e].insert(f);
-							neighborsDistances[e].push(std::make_pair(probability, f));
-							while (neighborsDistances[e].size() > neighborsNumber) {
-								neighbors[e].erase(neighborsDistances[e].top().second);
-								neighborsDistances[e].pop();
-							}
-						}
-					}
-				}
-			}
-		}
-
-
-		for (const auto &sentencePair : sentencePairs) {
-			for (int i = 0; i < sentencePair.first.size(); ++i) {
-				for (int j = 0; j < sentencePair.second.size(); ++j) {
-					int e = sentencePair.first[i];
-					int f = sentencePair.second[j];
-					if (neighbors[e].find(f) != neighbors[e].end()) {
-						double probability = translationModel.getTranslationProbability(e, f);
-						// cerr << i << '-' << j << ' ';
-						// cerr << eDict.getWordByIndex(e) << " " << fDict.getWordByIndex(f) << " " << probability << endl;
-						os << j << '-' << i << ' ';
-					}
-				}
-			}
-			os << '\n';
+			++processed;
 		}
 	}
 
@@ -192,7 +163,7 @@ int main(int argc, char **argv) {
 	// aligner.getTranslationModel().saveToFile("model_100000");
 
 	// aligner.getTranslationModel().loadFromFile("model_100000");
-	aligner.trainModel(IBM_Model_2(10));
+	aligner.trainModel(IBM_Model_2(1));
 
 	// aligner.getTranslationModel().saveToFile("translation_model");
 	// aligner.getAlignmentModel().saveToFile("alignment_model");
