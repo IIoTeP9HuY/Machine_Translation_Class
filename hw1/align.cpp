@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 	aligner.readSentences(dataPath, sentencesNumber);
 	// aligner.setModel(readTranslationModel("translationModel_100000"));
 
-	aligner.trainModel(IBM_Model_1(100000));
+	aligner.trainModel(IBM_Model_1(10));
 	// aligner.getTranslationModel().saveToFile("model_100000");
 
 	// aligner.getTranslationModel().loadFromFile("model_100000");
