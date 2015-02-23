@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os, sys, codecs
 
 def read_all_tokens(path):
